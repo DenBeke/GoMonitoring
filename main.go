@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"github.com/shirou/gopsutil/mem"
 	"math/rand"
+	"golang.org/x/net/websocket"
+	"time"
+	"encoding/json"
 )
 
 
@@ -74,6 +77,60 @@ func handleLogout(response http.ResponseWriter, request *http.Request) {
 
 }
 
+
+
+func HandleSocket(ws *websocket.Conn) {
+
+	// Greet the client
+	if err := websocket.Message.Send(ws, "Hello!"); err != nil {
+		log.Println("Can't send to socket:", err)
+		return
+	}
+
+	// Wait for incoming websocket messages
+	for {
+		
+		time.Sleep(2500 * time.Millisecond)
+		
+		v, _ := mem.VirtualMemory()
+
+		
+		msgBytes, err := json.Marshal(v)
+		if err != nil {
+			log.Println("Can't marshal:", err)
+		}
+		
+		msg := string(msgBytes)
+		
+		
+		log.Println("Sending to client: ", msg)
+		if err := websocket.Message.Send(ws, msg); err != nil {
+			log.Println("Can't send to socket:", err)
+			break
+		}
+		
+		/*
+		var reply string
+
+		if err := websocket.Message.Receive(ws, &reply); err != nil {
+			log.Println("Can't receive from socket:", err)
+			break
+		}
+
+		log.Println("Received back from client: " + reply)
+
+		msg := "Received:  " + reply
+		log.Println("Sending to client: " + msg)
+
+		if err := websocket.Message.Send(ws, msg); err != nil {
+			log.Println("Can't send to socket:", err)
+			break
+		}
+		*/
+	}
+}
+
+
 func main() {
 	
 	// Initialize all template files
@@ -86,10 +143,17 @@ func main() {
 	}
 	
 
+	// Handlers for pages
 	router.HandleFunc("/", handleIndex)
-
 	router.HandleFunc("/login", handleLogin)
 	router.HandleFunc("/logout", handleLogout)
+	
+	// Handler for static content
+	fs := http.FileServer(http.Dir("./theme/assets"))
+	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
+
+	// Handler for websockets
+	http.Handle("/ws", websocket.Handler(HandleSocket))
 
 	http.Handle("/", router)
 	http.ListenAndServe(":8000", nil)

@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <title>Monitoring</title>
     
-    <!--<link href="style.css" rel="stylesheet" type="text/css">-->
+    <link href="assets/style.css" rel="stylesheet" type="text/css">
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script src="assets/ws.js"></script>
     
 </head>
 <body>
@@ -16,8 +19,8 @@
     <table>
         <tbody>
             <tr>
-                <td>Memor usage %</td>
-                <td>{{.UsedPercent}}</td>
+                <td>Memory usage %</td>
+                <td id="memory">{{.UsedPercent}}</td>
             </tr>
         </tbody>
     </table>
