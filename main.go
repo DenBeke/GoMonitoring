@@ -19,14 +19,19 @@ var authkeys = make(map[string]int32)
 
 func handleIndex(response http.ResponseWriter, request *http.Request) {
 
-	session, _ := store.Get(request, "gosession")
+	session, err := store.Get(request, "gosession")
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	
 	if session.Values["name"] == "" || session.Values["name"] == nil {
-		log.Println(session.Values["name"])
 		http.Redirect(response, request, "/login", 302)
+		return
 	}
 	
 	// Add authentication key
+	log.Println(session.Values["name"])
 	authkeys[session.Values["name"].(string)] = rand.Int31()
 	
 	v, _ := mem.VirtualMemory()
