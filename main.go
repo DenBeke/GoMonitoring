@@ -23,6 +23,10 @@ type cpu_json struct {
 	UsedPercent float64
 }
 
+func round(a float64) float64 {
+	return float64(int(a * 100))/100.0
+}
+
 func handleIndex(response http.ResponseWriter, request *http.Request) {
 
 	session, err := store.Get(request, "gosession")
@@ -44,7 +48,17 @@ func handleIndex(response http.ResponseWriter, request *http.Request) {
 
 	log.Println("Request for index:", session.Values["name"])
 
-	templates["home"].Execute(response, cpu_json{UsedPercent: v[0]})
+
+	// Reload templates for debugging purpose
+	for _, templateName := range []string{"home", "login"} {
+		t, err := template.ParseFiles("theme/" + templateName + ".html")
+		if err != nil {
+			log.Fatal("Couldn't load template file:", err)
+		}
+		templates[templateName] = t
+	}
+
+	templates["home"].Execute(response, cpu_json{UsedPercent: round(v[0])})
 
 }
 
@@ -95,7 +109,7 @@ func HandleSocket(ws *websocket.Conn) {
 
 		v, _ := cpu.Percent(100*time.Millisecond, false)
 
-		msgBytes, err := json.Marshal(cpu_json{UsedPercent: v[0]})
+		msgBytes, err := json.Marshal(cpu_json{UsedPercent: round(v[0])})
 		if err != nil {
 			log.Println("Can't marshal:", err)
 		}

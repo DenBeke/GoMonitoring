@@ -59,7 +59,7 @@ window.onload = function() {
     sock.onmessage = function(e) {
         result = JSON.parse(e.data);
         console.log(result.UsedPercent);
-        $('#cpu').html(result.UsedPercent);
+        $('#cpu').html(result.UsedPercent + "%");
         
         lineChartData.datasets[0].data.shift();
         lineChartData.datasets[0].data.push(result.UsedPercent);
