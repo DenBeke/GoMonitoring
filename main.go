@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	_ "fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/shirou/gopsutil/cpu"
 	"golang.org/x/net/websocket"
 	"html/template"
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -24,7 +24,7 @@ type cpu_json struct {
 }
 
 func round(a float64) float64 {
-	return float64(int(a * 100))/100.0
+	return float64(int(a*100)) / 100.0
 }
 
 func handleIndex(response http.ResponseWriter, request *http.Request) {
@@ -41,13 +41,11 @@ func handleIndex(response http.ResponseWriter, request *http.Request) {
 	}
 
 	// Add authentication key
-	log.Println(session.Values["name"])
 	authkeys[session.Values["name"].(string)] = rand.Int31()
 
 	v, _ := cpu.Percent(100*time.Millisecond, false)
 
-	log.Println("Request for index:", session.Values["name"])
-
+	log.Debugln("Request for index with username:", session.Values["name"])
 
 	// Reload templates for debugging purpose
 	for _, templateName := range []string{"home", "login"} {
@@ -102,6 +100,10 @@ func HandleSocket(ws *websocket.Conn) {
 		return
 	}
 
+	log.WithFields(log.Fields{
+		"ip": ws.Config().Origin.Host,
+	}).Info("Client opened websocket connection")
+
 	// Wait for incoming websocket messages
 	for {
 
@@ -111,12 +113,12 @@ func HandleSocket(ws *websocket.Conn) {
 
 		msgBytes, err := json.Marshal(cpu_json{UsedPercent: round(v[0])})
 		if err != nil {
-			log.Println("Can't marshal:", err)
+			log.Warningln("Can't marshal:", err)
 		}
 
 		msg := string(msgBytes)
 
-		log.Println("Sending to client: ", msg)
+		log.Debugln("Sending to client: ", msg)
 		if err := websocket.Message.Send(ws, msg); err != nil {
 			log.Println("Can't send to socket:", err)
 			break
@@ -144,6 +146,8 @@ func HandleSocket(ws *websocket.Conn) {
 }
 
 func main() {
+
+	log.SetLevel(log.DebugLevel)
 
 	// Initialize all template files
 	for _, templateName := range []string{"home", "login"} {
