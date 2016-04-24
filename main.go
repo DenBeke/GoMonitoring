@@ -7,7 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/cpu"
 	"math/rand"
 	"golang.org/x/net/websocket"
 	"time"
@@ -19,6 +19,12 @@ var store = sessions.NewCookieStore([]byte("something-very-secret2"))
 var router = mux.NewRouter()
 var templates = make(map[string]*template.Template)
 var authkeys = make(map[string]int32)
+
+
+type cpu_json struct {
+	UsedPercent float64
+}
+
 
 func handleIndex(response http.ResponseWriter, request *http.Request) {
 
@@ -37,11 +43,11 @@ func handleIndex(response http.ResponseWriter, request *http.Request) {
 	log.Println(session.Values["name"])
 	authkeys[session.Values["name"].(string)] = rand.Int31()
 	
-	v, _ := mem.VirtualMemory()
+	v, _ := cpu.Percent(100 * time.Millisecond, false)
 
 	log.Println("Request for index:", session.Values["name"])
 
-	templates["home"].Execute(response, v)
+	templates["home"].Execute(response, cpu_json{UsedPercent: v[0]})
 	
 }
 
@@ -78,7 +84,6 @@ func handleLogout(response http.ResponseWriter, request *http.Request) {
 }
 
 
-
 func HandleSocket(ws *websocket.Conn) {
 
 	// Greet the client
@@ -92,10 +97,9 @@ func HandleSocket(ws *websocket.Conn) {
 		
 		time.Sleep(2500 * time.Millisecond)
 		
-		v, _ := mem.VirtualMemory()
-
+		v, _ := cpu.Percent(100 * time.Millisecond, false)
 		
-		msgBytes, err := json.Marshal(v)
+		msgBytes, err := json.Marshal(cpu_json{UsedPercent: v[0]})
 		if err != nil {
 			log.Println("Can't marshal:", err)
 		}
